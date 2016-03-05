@@ -47,6 +47,14 @@
 /* Out point of the Oneplus One */
 #define OUT_POINT 0x01
 
+/* Accessory configuration data */
+#define MANUFACTURER "Lenovo"
+#define MODEL  "Y410P"
+#define VERSION "1.0"
+#define DESCRIPTION "Laptop"
+#define URI "URI"
+#define SERIALNO "123456"
+
 /* Function Prototypes */
 
 /**
@@ -59,26 +67,6 @@
  *   1 - if error occurs during initialization
  */
 int usb_init(libusb_device **device, libusb_device_handle *handle);
-
-/**
- * setup_accessory()
- * Parameters:
- *   manufacturer - the manufacturer of the device
- *   modelname - the name of the device
- *   description - summary of the device
- *   version - version of the device
- *   uri - identifier of the device
- *   serialno - serial number of the device
- * Returns:
- *   0 - if setup is successful
- */
-int setup_accessory( const char *manufacturer,
-		     const char *modelname,
-		     const char *description,
-		     const char *version,
-		     const char *uri,
-		     const char *serialno,
-		     libusb_device_handle *handle);
 
 /**
  * send_data()
@@ -99,7 +87,17 @@ int send_data( libusb_device_handle *handle, unsigned char *message);
  * Returns:
  *   None
  */
-int usb_close(libusb_device_handle *handle, libusb_device **device);
+int usb_close(libusb_device_handle *handle);
+
+/**
+ * setupAccessory()
+ * Parameters:
+ *   handle - the handle of the device
+ * Returns:
+ *   0 - if successful
+ *   1 - if an error occurs during setup
+ */
+int setupAccessory(libusb_device_handle *handle);
 
 /**
  * unmount_devices()
