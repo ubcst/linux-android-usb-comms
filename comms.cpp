@@ -32,7 +32,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 
     /* Initialize the libusb session */
     returnVal = libusb_init(NULL);
-
     if(returnVal < 0)
     {
 	std::cout << "USB Initialization Error: " << returnVal << std::endl;
@@ -41,18 +40,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 
     libusb_set_debug(NULL, 3);
 
-    /* Get device list */
-    returnVal = libusb_get_device_list(NULL, &device);
-    if(returnVal < 0)
-    {
-	std::cout << "Get device error: " << returnVal << std::endl;
-	return 1;
-    }
-    else
-    {
-	std::cout << returnVal << " devices in list." << std::endl;
-    }
-
     /* Open the device using its Vendor and Product IDs */
     handle = libusb_open_device_with_vid_pid(NULL, PHONE_VID, PHONE_PID);
     if(handle == NULL)
@@ -60,6 +47,7 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 	std::cout << "Device Open Error" << std::endl;
 	return 1;
     }
+
 
     /* Auto-detach drivers */
     returnVal = libusb_set_auto_detach_kernel_driver(handle, 1);
@@ -80,9 +68,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 	if(returnVal < 0)
 	{
 	    std::cout << "Kernel Detach Error: " << returnVal <<std::endl;
-
-	    usb_close(handle, device);
-
 	    return 1;
 	}
     }
@@ -90,16 +75,14 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
     {
 	std::cout << "Kernel driver inactive: " << returnVal <<std::endl;
 
+	setupAccessory(handle);
+
 	/* Claim device interface */
 	returnVal = libusb_claim_interface(handle, 0);
-
 	if(returnVal < 0)
 	{
 	    std::cout << "Claim Interface Error: " << returnVal 
 		      << " " << libusb_error_name(returnVal) << std::endl;
-
-	    usb_close(handle, device);
-
 	    return 1;
 	}
     }
@@ -110,29 +93,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
     }
 
     return 0;
-}
-
-/**
- * setup_accessory()
- * Parameters:
- *   manufacturer - the manufacturer of the device
- *   modelname - the name of the device
- *   description - summary of the device
- *   version - version of the device
- *   uri - identifier of the device
- *   serialno - serial number of the device
- * Returns:
- *   0 - if setup is successful
- */
-int setup_accessory( const char *manufacturer,
-		     const char *modelname,
-		     const char *description,
-		     const char *version,
-		     const char *uri,
-		     const char *serialno,
-		     libusb_device_handle *handle)
-{
-    /* Do Nothing */
 }
 
 /**
@@ -174,11 +134,9 @@ int send_data(libusb_device_handle *handle, unsigned char *message)
  * Returns:
  *   None
  */
-int usb_close(libusb_device_handle *handle, libusb_device **device)
+int usb_close(libusb_device_handle *handle)
 {
-    int returnVal=0;
-
-    libusb_free_device_list(device, 1);
+    int returnVal = 0;
 
     if(handle != NULL)
     {
@@ -202,4 +160,103 @@ int usb_close(libusb_device_handle *handle, libusb_device **device)
     return 0;
 }
 
+/**
+ * setupAccessory()
+ * Parameters:
+ *   handle - the handle of the device
+ * Returns:
+ *   0 - if successful
+ *   1 - if error occurs
+ */
+int setupAccessory(libusb_device_handle *handle)
+{
+	unsigned char ioBuffer[2];
+	int devVersion;
+	int response;
+	int tries = 5;
 
+	response = libusb_control_transfer(handle, /* handle */
+					   0xC0, /* bmRequestType */
+					   51, /* bRequest */
+					   0, /* wValue */
+					   0, /* wIndex */
+					   ioBuffer, /* data */
+					   2, /* wLength */
+					   0 /* timeout */);
+
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	devVersion = ioBuffer[1] << 8 | ioBuffer[0];
+	std::cout << "Version Code Device: " << devVersion << std::endl;
+	
+	usleep(1000);//sometimes hangs on the next transfer :(
+
+	response = libusb_control_transfer(handle,0x40,52,0,0,
+					   (unsigned char*)MANUFACTURER,
+					   sizeof(MANUFACTURER),0);
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	response = libusb_control_transfer(handle,0x40,52,0,1,
+					   (unsigned char*)MODEL,
+					   sizeof(MODEL)+1,0);
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	response = libusb_control_transfer(handle,0x40,52,0,2,
+					   (unsigned char*)DESCRIPTION,
+					   sizeof(DESCRIPTION)+1,0);	
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	response = libusb_control_transfer(handle,0x40,52,0,3,
+					   (unsigned char*)VERSION,
+					   sizeof(VERSION)+1,0);
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	response = libusb_control_transfer(handle,0x40,52,0,4,
+					   (unsigned char*)URI,
+					   sizeof(URI)+1,0);
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	response = libusb_control_transfer(handle,0x40,52,0,5,
+					   (unsigned char*)SERIALNO,
+					   sizeof(SERIALNO)+1,0);
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	std::cout << "Accessory Identification Sent" << std::endl;
+
+	response = libusb_control_transfer(handle,0x40,53,0,0,NULL,0,0);
+	if(response < 0)
+	{
+	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
+	    return 1;
+	}
+
+	return 0;
+}
