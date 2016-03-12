@@ -54,14 +54,14 @@ int usb_init(libusb_device **device, libusb_device_handle *&handle)
         } else {
             std::cout << "Device Handle: " << handle << std::endl;
         }
-    } else {
-        /* Unmount the devices if the device is not in accessory mode. */
-        const char *dirname = "/run/user/1000/gvfs/";
-        unmount_devices( dirname );
     }
 
     /* Setup Accessory Mode on both devices */
     setupAccessory(handle);
+
+    /* Unmount the devices if the device is not in accessory mode. */
+    const char *dirname = "/run/user/1000/gvfs/";
+    unmount_devices( dirname );
 
     /* Auto-detach drivers */
     returnVal = libusb_set_auto_detach_kernel_driver(handle, 1);
