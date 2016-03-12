@@ -22,7 +22,7 @@ int main(void)
     libusb_device_handle *phone; /* a handle for the phone connection */
     int returnVal = 0; /* returned values of functions */
 
-    unsigned char message[] = "$GPS,123.01,N,456.02,W,10:09:08,$END";
+    unsigned char message[USB_MSG_SIZE] = "$GPS,123.01,N,456.02,W,10:09:08,$END";
 
     int counter = 0;
 
@@ -32,7 +32,7 @@ int main(void)
     if(TEST_MODE)
 	std::cout << "Sending data..." << std::endl;
     
-    send_data(phone, message);
+    send_data(phone, message, USB_MSG_SIZE);
 
     if(TEST_MODE)
 	std::cout << "Close session..." << std::endl;
