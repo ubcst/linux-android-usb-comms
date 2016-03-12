@@ -28,7 +28,7 @@
  *   0 - if no error occured
  *   1 - if error occurs during initialization
  */
-int usb_init(libusb_device **device, libusb_device_handle *handle)
+int usb_init(libusb_device **device, libusb_device_handle *&handle)
 {
     int deviceCount = 0;
     int returnVal = 0;
@@ -45,8 +45,19 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
     handle = libusb_open_device_with_vid_pid(NULL, PHONE_VID, PHONE_PID);
     if(handle == NULL)
     {
-	std::cout << "Device Open Error" << std::endl;
-	return 1;
+        std::cout << "Device may already be in accessory mode. Checking..." << std::endl;
+        handle = libusb_open_device_with_vid_pid(NULL, ACC_VID, ACC_PID_ADB);
+
+        if(handle == NULL) {
+            std::cout << "Device Open Error" << std::endl;
+            return 1;
+        } else {
+            std::cout << "Device Handle: " << handle << std::endl;
+        }
+    } else {
+        /* Unmount the devices if the device is not in accessory mode. */
+        const char *dirname = "/run/user/1000/gvfs/";
+        unmount_devices( dirname );
     }
 
     /* Setup Accessory Mode on both devices */
@@ -59,10 +70,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 	std::cout << "Auto detach error: " << libusb_error_name(returnVal) 
 		  << std::endl;
     }
-
-    /* Unmount the devices */
-    const char *dirname = "/run/user/1000/gvfs/";
-    unmount_devices( dirname );
 
     /* Check if device is attached to the kernel, detach if it is */
     returnVal = libusb_kernel_driver_active(handle, 0);

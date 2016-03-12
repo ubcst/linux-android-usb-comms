@@ -19,7 +19,7 @@ int main(void)
     int gpsPort = 0;
 
     libusb_device **device; 
-    libusb_device_handle *phone; /* a handle for the phone connection */
+    libusb_device_handle *phone = NULL; /* a handle for the phone connection */
     int returnVal = 0; /* returned values of functions */
 
     unsigned char message[] = "$GPS,123.01,N,456.02,W,10:09:08,$END";
@@ -28,6 +28,11 @@ int main(void)
 
     /* Initialize phone and GPS sessions */
     usb_init(device, phone);
+    if(phone == NULL) {
+       std::cout << "Phone is null" << std::endl;
+    } else {
+       std::cout << "Phone: " << phone << std::endl;
+    }
 
     if(TEST_MODE)
 	std::cout << "Sending data..." << std::endl;

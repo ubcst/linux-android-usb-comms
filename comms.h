@@ -72,7 +72,7 @@
  *   0 - if no error occured
  *   1 - if error occurs during initialization
  */
-int usb_init(libusb_device **device, libusb_device_handle *handle);
+int usb_init(libusb_device **device, libusb_device_handle *&handle);
 
 /**
  * send_data()
