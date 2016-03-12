@@ -60,6 +60,10 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 		  << std::endl;
     }
 
+    /* Unmount the devices */
+    const char *dirname = "/run/user/1000/gvfs/";
+    unmount_devices( dirname );
+
     /* Check if device is attached to the kernel, detach if it is */
     returnVal = libusb_kernel_driver_active(handle, 0);
     if(returnVal == 1)
@@ -212,6 +216,37 @@ int usb_close(libusb_device_handle *handle)
     std::cout << "Session closed!" << std::endl;
 
     return 0;
+}
+
+/**
+ * unmount_devices()
+ * Check if device(s) are mounted by gvfs. If it is, unmount the device(s).
+ * Source: http://stackoverflow.com/questions/6383584/check-if-a-directory-is-empty-using-c-on-linux
+ * Parameters:
+ *   dirname - the directory where the device(s) are unmounted.
+ */
+void unmount_devices( const char *dirname ) {
+    DIR *dir = opendir(dirname);
+    int n = 0;
+    struct dirent *d;
+
+    if( dir != NULL ) {
+        while( ( d = readdir( dir ) ) != NULL ) {
+            // n > 2 to ignore the "." and ".." options when reading a
+            // directory
+            if( ++n > 2 ) {
+               std::string path = dirname + std::string(d->d_name);
+               std::string cmd = "gvfs-mount -u ";
+               std::string fullCmd = cmd + path;
+               std::cout << fullCmd << std::endl;
+               system( fullCmd.c_str() );
+               break;
+            }
+        }
+        closedir(dir);
+    } else {
+       std::cout << "cannot open dir " << errno << std::endl;
+    }
 }
 
 /**

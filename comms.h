@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <termios.h>
+#include <dirent.h>
+#include <errno.h>
 #include <libusb.h>
 
 /* Header Guard */
@@ -32,10 +34,12 @@
 #define COMMS_H
 
 /* Product ID of Android phone */
-#define PHONE_PID 0x6765 /* Oneplus One Product ID */
+// #define PHONE_PID 0x6764 /* Oneplus One Product ID */
+#define PHONE_PID 0x4ee2 /* Nexus 5 Product ID */
 
 /* Vendor ID of Android phone */
-#define PHONE_VID 0x05c6 /* Oneplus One Vendor ID */
+// #define PHONE_VID 0x05c6 /* Oneplus One Vendor ID */
+#define PHONE_VID 0x18d1 /* Nexus 5 Vendor ID */
 
 /* Accessory Mode-specific VID and PIDs */
 #define ACC_VID 0x18d1 /* Accessory Mode VID */
@@ -101,4 +105,12 @@ int usb_close(libusb_device_handle *handle);
  */
 int setupAccessory(libusb_device_handle *handle);
 
+/**
+ * unmount_devices()
+ * Check if device(s) are mounted by gvfs. If it is, unmount the device(s).
+ * Source: http://stackoverflow.com/questions/6383584/check-if-a-directory-is-empty-using-c-on-linux
+ * Parameters:
+ *   dirname - the directory where the device(s) are unmounted.
+ */
+void unmount_devices( const char *dirname );
 #endif /* End Header Guard */
