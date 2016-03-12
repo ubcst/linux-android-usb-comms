@@ -14,6 +14,9 @@
 
 #include "comms.h"
 
+/* Set to 1 for diagnostic messages, 0 for no messages */
+#define TEST_MODE 1
+
 /**
  * usb_init()
  * Initializes the USBs session
@@ -38,8 +41,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 	return 1;
     }
 
-    libusb_set_debug(NULL, 3);
-
     /* Open the device using its Vendor and Product IDs */
     handle = libusb_open_device_with_vid_pid(NULL, PHONE_VID, PHONE_PID);
     if(handle == NULL)
@@ -48,6 +49,8 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 	return 1;
     }
 
+    /* Setup Accessory Mode on both devices */
+    setupAccessory(handle);
 
     /* Auto-detach drivers */
     returnVal = libusb_set_auto_detach_kernel_driver(handle, 1);
@@ -75,8 +78,6 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
     {
 	std::cout << "Kernel driver inactive: " << returnVal <<std::endl;
 
-	setupAccessory(handle);
-
 	/* Claim device interface */
 	returnVal = libusb_claim_interface(handle, 0);
 	if(returnVal < 0)
@@ -91,6 +92,9 @@ int usb_init(libusb_device **device, libusb_device_handle *handle)
 	std::cout << "Kernel driver error: " << returnVal << std::endl;
 	return 1;
     }
+
+    if(TEST_MODE)
+	std::cout << "Init Successful. Begin data transfer." << std::endl;
 
     return 0;
 }
@@ -109,22 +113,70 @@ int send_data(libusb_device_handle *handle, unsigned char *message)
     int returnVal;
     int actual;
 
+    std::cout << "Begin send data..." << std::endl;
+
     /* Transfer data to device */
     returnVal = libusb_bulk_transfer(handle, IN_POINT, message,
 				     sizeof(message), &actual, 0);
 
-    if((returnVal == 0) && actual == sizeof(message))
+    if(TEST_MODE)
     {
-	std::cout << "Message sent successfully!" << std::endl;
-	return 0;
+	std::cout << "Bytes sent: " << actual << " of " << sizeof(message)
+		  << std::endl;
+
+	if((returnVal == 0) && actual == sizeof(message))
+	{
+	    std::cout << "Message sent successfully!" << std::endl;
+	    return 0;
+	}
+	else
+	{
+	    std::cout << "Message not sent! Actual: " << actual << ", Message: " 
+		      << sizeof(message) << std::endl;
+	    return 1;
+	}
     }
-    else
-    {
-	std::cout << "Message not sent! Actual: " << actual << ", Message: " 
-		  << sizeof(message) << std::endl;
-	return 1;
-    }
+
+    return returnVal;
 }
+
+/**
+ * receive_data()
+ * Parameters: 
+ *   handle - the device handle
+ *   message - the message string
+ * Returns:
+ *   0 - if receive is successful
+ *   1 - if receive fails
+ */
+int receive_data(libusb_device_handle *handle, unsigned char *message)
+{
+    int returnVal;
+    int actual;
+
+    /* Transfer data to device */
+    returnVal = libusb_bulk_transfer(handle, IN_POINT, message,
+				     sizeof(message), &actual, 0);
+
+    if(TEST_MODE)
+    {
+	if((returnVal == 0) && actual == sizeof(message))
+	{
+	    std::cout << "Message sent successfully!" << std::endl;
+	    return 0;
+	}
+	else
+	{
+	    std::cout << "Message not sent! Actual: " << actual << ", Message: " 
+		      << sizeof(message) << std::endl;
+	    return 1;
+	}
+    }
+
+    return returnVal;
+}
+
+
 
 /**
  * usb_close()
@@ -138,6 +190,7 @@ int usb_close(libusb_device_handle *handle)
 {
     int returnVal = 0;
 
+    /* If device handle interface was claimed, release the interface */
     if(handle != NULL)
     {
 	returnVal = libusb_release_interface(handle, 0);
@@ -152,6 +205,7 @@ int usb_close(libusb_device_handle *handle)
 	}
     }
 
+    /* Close the device and the libusb session */
     libusb_close(handle);
     libusb_exit(NULL);
 
@@ -162,6 +216,8 @@ int usb_close(libusb_device_handle *handle)
 
 /**
  * setupAccessory()
+ * Accessory setup follows the AOA Protocol for setting up Android
+ * Accessory Mode in both devices.
  * Parameters:
  *   handle - the handle of the device
  * Returns:
@@ -173,6 +229,7 @@ int setupAccessory(libusb_device_handle *handle)
 	unsigned char ioBuffer[2];
 	int devVersion;
 	int response;
+	int counter = 0;
 	int tries = 5;
 
 	response = libusb_control_transfer(handle, /* handle */
@@ -251,11 +308,36 @@ int setupAccessory(libusb_device_handle *handle)
 
 	std::cout << "Accessory Identification Sent" << std::endl;
 
+	/* Request accessory mode from Android device */
 	response = libusb_control_transfer(handle,0x40,53,0,0,NULL,0,0);
 	if(response < 0)
 	{
 	    std::cout << "Error: " << libusb_error_name(response) << std::endl;
 	    return 1;
+	}
+
+	/* Reconnect the device using the accessory PID */
+	if(handle != NULL)
+	{
+	    libusb_release_interface(handle, 0);
+	    libusb_close(handle);
+	}
+
+	sleep(1);
+
+	/* If connection fails, try ACC_PID instead of ACC_PID_ADB */
+	for(counter = 0; counter < tries; counter++)
+	{
+
+	    /* Open the device using its Vendor and Product IDs */
+	    handle = libusb_open_device_with_vid_pid(NULL, ACC_VID, ACC_PID_ADB);
+	    if(handle == NULL)
+	    {
+		std::cout << "Error opening with ACC PID: " << counter + 1
+			  << " of " << tries << std::endl;
+		if(counter == 4)
+		    return 1;
+	    }
 	}
 
 	return 0;

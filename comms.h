@@ -37,11 +37,17 @@
 /* Vendor ID of Android phone */
 #define PHONE_VID 0x05c6 /* Oneplus One Vendor ID */
 
+/* Accessory Mode-specific VID and PIDs */
+#define ACC_VID 0x18d1 /* Accessory Mode VID */
+
+#define ACC_PID_ADB 0x2d01 /* Accessory Mode PID with ADB active */
+#define ACC_PID 0x2d00 /* Accessory Mode PID with no PID */
+
 /* In point of the Oneplus One */
 #define IN_POINT 0x81
 
 /* Out point of the Oneplus One */
-#define OUT_POINT 0x01
+#define OUT_POINT 0x02
 
 /* Accessory configuration data */
 #define MANUFACTURER "Lenovo"

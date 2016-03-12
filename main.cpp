@@ -10,6 +10,8 @@
 /* Set the path of the GPS port */
 #define GPS_PATH "/dev/ttyACM0"
 
+#define TEST_MODE 1
+
 int main(void)
 {
     std::vector<std::string> nmeaLine;
@@ -27,8 +29,14 @@ int main(void)
     /* Initialize phone and GPS sessions */
     usb_init(device, phone);
 
+    if(TEST_MODE)
+	std::cout << "Sending data..." << std::endl;
+    
     send_data(phone, message);
 
+    if(TEST_MODE)
+	std::cout << "Close session..." << std::endl;
+    
     usb_close(phone);
     
     /*
