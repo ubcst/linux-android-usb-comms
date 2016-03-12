@@ -34,12 +34,12 @@
 #define COMMS_H
 
 /* Product ID of Android phone */
-// #define PHONE_PID 0x6764 /* Oneplus One Product ID */
-#define PHONE_PID 0x4ee2 /* Nexus 5 Product ID */
+ #define PHONE_PID 0x6765 /* Oneplus One Product ID */
+//#define PHONE_PID 0x4ee2 /* Nexus 5 Product ID */
 
 /* Vendor ID of Android phone */
-// #define PHONE_VID 0x05c6 /* Oneplus One Vendor ID */
-#define PHONE_VID 0x18d1 /* Nexus 5 Vendor ID */
+ #define PHONE_VID 0x05c6 /* Oneplus One Vendor ID */
+//#define PHONE_VID 0x18d1 /* Nexus 5 Vendor ID */
 
 /* Accessory Mode-specific VID and PIDs */
 #define ACC_VID 0x18d1 /* Accessory Mode VID */
@@ -52,6 +52,8 @@
 
 /* Out point of the Oneplus One */
 #define OUT_POINT 0x02
+
+#define USB_MSG_SIZE 256
 
 /* Accessory configuration data */
 #define MANUFACTURER "Lenovo"
@@ -79,11 +81,12 @@ int usb_init(libusb_device **device, libusb_device_handle *&handle);
  * Parameters:
  *   handle - the device handle
  *   message - the message string
+ *   msg_size - the size of the message string array
  * Returns:
  *   0 - if transfer is successful
  *   1 - if transfer fails
  */
-int send_data( libusb_device_handle *handle, unsigned char *message);
+int send_data( libusb_device_handle *handle, unsigned char *message, int msg_size);
 
 /**
  * usb_close()

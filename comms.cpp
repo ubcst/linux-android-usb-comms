@@ -119,16 +119,26 @@ int usb_init(libusb_device **device, libusb_device_handle *&handle)
  *   0 - if transfer is successful
  *   1 - if transfer fails
  */
-int send_data(libusb_device_handle *handle, unsigned char *message)
+int send_data(libusb_device_handle *handle, unsigned char *message, int msg_size)
 {
+    unsigned char buffer[256] = "$GPS,123.01,N,456.02,W,10:09:08,$END";
     int returnVal;
     int actual;
 
-    std::cout << "Begin send data..." << std::endl;
+    std::cout << "Begin send data..." << std::endl << std::endl;
+
+    std::cout << buffer << " - Size of: " << msg_size << std::endl;
 
     /* Transfer data to device */
-    returnVal = libusb_bulk_transfer(handle, IN_POINT, message,
-				     sizeof(message), &actual, 0);
+    returnVal = libusb_bulk_transfer(handle, 
+				     OUT_POINT, 
+				     buffer,
+				     msg_size, 
+				     &actual, 
+				     1000);
+    std::cout << "Bulk transfer error: " << libusb_error_name(returnVal) 
+		  << std::endl;
+
 
     if(TEST_MODE)
     {
